@@ -1,0 +1,297 @@
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class A3 {
+    public static void main(String[] args) {
+        Scanner entrada = new Scanner(System.in);
+        ArrayList<Conta> contas = new ArrayList<>();
+        
+        while (true) {
+            System.out.println("Menu:");
+            System.out.println("1. Cadastrar conta");
+            System.out.println("2. Listar contas");
+            System.out.println("3. Transferir");
+            System.out.println("4. Verificacao");
+            System.out.println("5. Saque");
+            System.out.println("6. Depositar");
+            System.out.println("7. Sair");
+            System.out.print("Escolha uma opção: ");
+            int opcao = entrada.nextInt();
+            entrada.nextLine();
+
+            switch (opcao) {
+                case 1:
+                    Conta conta = cadastrarConta(entrada);
+                    if (conta != null) {
+                        contas.add(conta);
+                        System.out.println("Conta cadastrada com sucesso!");
+                    }
+                    break;
+                case 2:
+                    listarContas(contas);
+                    break;
+                case 3:
+                    transferencia(contas, entrada);
+                    break;
+                case 4:
+                    System.out.print("Digite o CPF para verificar o país de origem: ");
+                    String cpfVerificar = entrada.nextLine();
+                    Conta contaVerificar = null;
+                    for (Conta c : contas) {
+                        if (c.cpf.equals(cpfVerificar)) {
+                            contaVerificar = c;
+                            break;
+                        }
+                    }
+                    if (contaVerificar != null) {
+                        System.out.print("Digite a senha da conta: ");
+                        int senhaVerificar = entrada.nextInt();
+                        entrada.nextLine();
+                        if (contaVerificar.senha != senhaVerificar) {
+                            System.out.println("Senha incorreta!");
+                            contaVerificar.tentativasSenhaInvalidas++; // Conta erro de senha
+                        } else {
+                            verificarpaisorigem(contaVerificar.porigem);
+                        }
+                        // Mostra sempre o número de tentativas inválidas
+                        System.out.println("Tentativas de senha inválida: " + contaVerificar.tentativasSenhaInvalidas);
+                    } else {
+                        System.out.println("Conta não encontrada para o CPF informado.");
+                    }
+                    break;
+                case 5:
+                    saque(contas, entrada);
+                    break;
+                case 6:
+                    depositar(contas, entrada);
+                    break;
+                case 7:
+                    System.out.println("Saindo...");
+                    entrada.close();
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Opção inválida.");
+            }
+        }
+    }
+
+    public static void listarContas(ArrayList<Conta> contas) {
+        if (contas.isEmpty()) {
+            System.out.println("Nenhuma conta cadastrada.");
+        } else {
+            for (Conta conta : contas) {
+                System.out.println("Nome: " + conta.nome);
+                System.out.println("CPF: " + conta.cpf);
+                System.out.println("Saldo: " + conta.saldo);
+                System.out.println("País de origem: " + conta.porigem);
+                System.out.println("-------------------------");
+            }
+        }
+    }
+
+
+    public static Conta cadastrarConta(Scanner entrada) {
+        System.out.print("Digite o nome do titular: ");
+        String nome = entrada.nextLine();
+
+        if (nome.isEmpty()) {
+            System.out.println("Nome vazio. Cancelando cadastro.");
+            return null;
+        }
+
+        System.out.print("Digite o CPF: ");
+        String cpf = entrada.nextLine();
+
+        System.out.print("Digite a senha da conta: ");
+        int senha = entrada.nextInt();
+        entrada.nextLine();
+
+        System.out.print("Digite o saldo: ");
+        double saldo = Double.parseDouble(entrada.nextLine());
+
+        System.out.print("Digite o país de origem: ");
+        String porigem = entrada.nextLine();
+
+        return new Conta(nome, cpf, senha, saldo, porigem);
+    }
+
+    public static boolean verificarpaisorigem(String porigem) {
+        if (porigem.equalsIgnoreCase("brasil")) {
+            System.out.println("País de origem nacional Brasil."); 
+            return true;
+        } else {
+            System.out.println("Pais de origem internacional: " + porigem);
+            return false;
+        }
+    }
+
+    public static void transferencia(ArrayList<Conta> contas, Scanner entrada) {
+        System.out.print("CPF da conta de origem: ");
+        String cpfOrigem = entrada.nextLine();
+
+        Conta origem = null;
+        for (Conta c : contas) {
+            if (c.cpf.equals(cpfOrigem)) {
+                origem = c;
+                break;
+            }
+        }
+
+        if (origem == null) {
+            System.out.println("Conta de origem não encontrada.");
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            System.out.print("Digite a senha da conta de origem: ");
+            int senha = entrada.nextInt();
+            entrada.nextLine();
+
+            if (origem.senha == senha) {
+                origem.tentativasSenhaInvalidas = 0; // Zera ao acertar
+                System.out.print("CPF da conta de destino: ");
+                String cpfDestino = entrada.nextLine();
+
+                Conta destino = null;
+                for (Conta c : contas) {
+                    if (c.cpf.equals(cpfDestino)) {
+                        destino = c;
+                        break;
+                    }
+                }
+
+                if (destino == null) {
+                    System.out.println("Conta de destino não encontrada.");
+                    return;
+                }
+
+                System.out.print("Valor a transferir: ");
+                double valor = entrada.nextDouble();
+                entrada.nextLine();
+
+                if (valor <= 0) {
+                    System.out.println("Valor inválido.");
+                    return;
+                }
+                if (origem.saldo < valor) {
+                    System.out.println("Saldo insuficiente.");
+                    return;
+                }
+                origem.saldo -= valor;
+                destino.saldo += valor;
+                System.out.println("Transferência realizada com sucesso!");
+                return;
+            } else {
+                origem.tentativasSenhaInvalidas++;
+                System.out.println("Senha incorreta!");
+                System.out.println("Tentativas de senha inválida: " + origem.tentativasSenhaInvalidas);
+                if (origem.tentativasSenhaInvalidas >= 3) {
+                    System.out.println("Conta bloqueada para esta operação por 3 tentativas inválidas.");
+                    return;
+                }
+            }
+        }
+    }
+    public static void depositar(ArrayList<Conta> contas, Scanner entrada) {
+        System.out.print("Digite o CPF da conta para depósito: ");
+        String cpf = entrada.nextLine();
+
+        Conta conta = null;
+        for (Conta c : contas) {
+            if (c.cpf.equals(cpf)) {
+                conta = c;
+                break;
+            }
+        }
+
+        if (conta == null) {
+            System.out.println("Conta não encontrada.");
+            return;
+        }
+
+        System.out.print("Valor do depósito: ");
+        double valor = entrada.nextDouble();
+        entrada.nextLine();
+
+        if (valor <= 0) {
+            System.out.println("Valor inválido.");
+            return;
+        }
+
+        conta.saldo += valor;
+        System.out.println("Depósito realizado com sucesso! Novo saldo: " + conta.saldo);
+    }
+
+    public static void saque(ArrayList<Conta> contas, Scanner entrada) {
+        System.out.print("Digite o CPF da conta para saque: ");
+        String cpf = entrada.nextLine();
+
+        Conta conta = null;
+        for (Conta c : contas) {
+            if (c.cpf.equals(cpf)) {
+                conta = c;
+                break;
+            }
+        }
+
+        if (conta == null) {
+            System.out.println("Conta não encontrada.");
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            System.out.print("Digite a senha da conta: ");
+            int senha = entrada.nextInt();
+            entrada.nextLine();
+
+            if (conta.senha == senha) {
+                System.out.print("Valor do saque: ");
+                double valor = entrada.nextDouble();
+                entrada.nextLine();
+
+                if (valor <= 0) {
+                    System.out.println("Valor inválido.");
+                    return;
+                }
+
+                if (conta.saldo < valor) {
+                    System.out.println("Saldo insuficiente.");
+                    return;
+                }
+
+                conta.saldo -= valor;
+                System.out.println("Saque realizado com sucesso! Novo saldo: " + conta.saldo);
+                conta.tentativasSenhaInvalidas = 0; // Zera tentativas ao sucesso
+                return;
+            } else {
+                conta.tentativasSenhaInvalidas++;
+                System.out.println("Senha incorreta!");
+                System.out.println("Tentativas de senha inválida: " + conta.tentativasSenhaInvalidas);
+                if (conta.tentativasSenhaInvalidas >= 3) {
+                    System.out.println("Conta bloqueada para esta operação por 3 tentativas inválidas.");
+                    return;
+                }
+            }
+        }
+    }
+}
+
+// Classe Conta para armazenar os dados
+class Conta {
+    String nome;
+    String cpf;
+    int senha;
+    double saldo;
+    String porigem;
+    int tentativasSenhaInvalidas = 0;
+
+    public Conta(String nome, String cpf, int senha, double saldo, String porigem) {
+        this.nome = nome;
+        this.cpf = cpf;
+        this.senha = senha;
+        this.saldo = saldo;
+        this.porigem = porigem;
+    }
+}
+
